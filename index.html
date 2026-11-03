@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>دردشة</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;800&display=swap">
+<style>
+:root{--bg:#e9f1f7;--panel:#fff;--ink:#12263a;--mine:#1c7c6b;--th:#eef3f7;--sub:#62788c;--line:#d5e0e9;--bad:#d64550;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b141c;--panel:#14232e;--ink:#e6eef5;--mine:#1d8a77;--th:#203544;--sub:#8fa6b8;--line:#243a49;--bad:#ff6b76;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0b141c;--panel:#14232e;--ink:#e6eef5;--mine:#1d8a77;--th:#203544;--sub:#8fa6b8;--line:#243a49;--bad:#ff6b76;color-scheme:dark}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Cairo",system-ui,sans-serif;font-size:15px}
+button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:8px 14px;background:var(--mine);color:#fff;font-weight:800}
+button.g{background:var(--th);color:var(--ink)}button.d{background:var(--bad)}
+input{font:inherit;color:var(--ink);background:var(--th);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
+:focus-visible{outline:3px solid var(--mine);outline-offset:2px}
+.hide{display:none!important}
+#login{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center}
+#login h1{margin:0;font-size:2rem}#login p{margin:0;color:var(--sub);max-width:340px}
+#login input{width:min(320px,100%);text-align:center}
+.err{color:var(--bad);font-weight:500;min-height:1.4em;margin:0}
+#app{height:100%;display:grid;grid-template-columns:320px 1fr}
+aside,main{background:var(--panel);display:flex;flex-direction:column;min-height:0;height:100%}
+aside{border-inline-end:1px solid var(--line)}
+.top{display:flex;gap:8px;align-items:center;padding:12px;border-bottom:1px solid var(--line)}
+.top b{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#q{margin:10px 12px}
+#ren{padding:0 12px 10px;display:flex;flex-wrap:wrap;gap:6px}#ren input{flex:1}
+#list{flex:1;overflow:auto}
+.row{display:flex;gap:10px;align-items:center;padding:12px;border-bottom:1px solid var(--line);cursor:pointer}
+.row.on{background:var(--th)}.row i{width:38px;height:38px;border-radius:50%;background:var(--mine);color:#fff;display:grid;place-items:center;font-style:normal;font-weight:800}
+.row span{flex:1}.row em{background:var(--bad);color:#fff;border-radius:99px;padding:0 8px;font-style:normal;font-size:.8rem}
+.empty{padding:16px;color:var(--sub);text-align:center}
+#msgs{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
+.b{max-width:78%;padding:8px 12px;border-radius:16px;word-break:break-word}
+.b.me{align-self:flex-start;background:var(--mine);color:#fff}.b.th{align-self:flex-end;background:var(--th)}
+.b img{max-width:100%;border-radius:10px;display:block}.b audio{max-width:100%}
+.bar{display:flex;gap:6px;padding:10px;border-top:1px solid var(--line);align-items:center}.bar input{flex:1}
+.bar button{padding:8px 11px}
+#none{flex:1;display:grid;place-items:center;color:var(--sub);padding:20px;text-align:center}
+#ban{background:var(--bad);color:#fff;padding:8px 12px;text-align:center}
+#call{position:fixed;inset:0;background:#000d;z-index:9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#fff;padding:16px}
+#call video{max-width:100%;max-height:55vh;border-radius:14px;background:#000}#lv{width:110px}
+#back{display:none}
+@media (max-width:700px){#app{grid-template-columns:1fr}body.ch aside{display:none}body:not(.ch) main{display:none}#back{display:inline-block}}
+</style>
+</head>
+<body>
+<section id="login">
+<h1>💬 دردشة</h1>
+<p>اختر اسم مستخدم ليجدك الآخرون. عند الخروج تُحذف كل الرسائل عند الطرفين.</p>
+<input id="nm" maxlength="16" placeholder="اسم المستخدم" autocomplete="off">
+<button id="go">دخول</button>
+<p class="err" id="e1"></p>
+</section>
+
+<div id="app" class="hide">
+<aside>
+<div class="top"><b id="mine"></b><button class="g" id="rn" title="تغيير الاسم">✏️</button><button class="d" id="out">خروج</button></div>
+<div id="ren" class="hide"><input id="nn" maxlength="16" placeholder="الاسم الجديد"><button id="sv">حفظ</button><p class="err" id="e2" style="width:100%"></p></div>
+<input id="q" placeholder="ابحث عن مستخدم">
+<div id="list"></div>
+</aside>
+<main>
+<div id="none">اختر مستخدماً من القائمة لبدء المحادثة.<br>لتجربة التطبيق افتح هذه الصفحة في تبويب ثانٍ بمستخدم آخر.</div>
+<div id="chat" class="hide" style="display:flex;flex-direction:column;flex:1;min-height:0">
+<div class="top"><button class="g" id="back">→</button><b id="cn"></b><button class="g" id="ca">📞</button><button class="g" id="cv">🎥</button><button class="g" id="bl">حظر</button></div>
+<div id="ban" class="hide"></div>
+<div id="msgs"></div>
+<div class="bar"><button class="g" id="im">🖼️</button><button class="g" id="mic">🎤</button><input id="in" placeholder="اكتب رسالة" autocomplete="off"><button id="sd">إرسال</button></div>
+</div>
+</main>
+</div>
+
+<input type="file" id="fi" accept="image/*" class="hide">
+<div id="call" class="hide"><div id="cs"></div><video id="rv" autoplay playsinline></video><video id="lv" autoplay playsinline muted></video>
+<div><button id="ok" class="hide">رد</button> <button class="d" id="no">إنهاء</button></div></div>
+
+<script>
+const $=s=>document.querySelector(s),D=864e5,bc=new BroadcastChannel("chat-demo");
+const S=sessionStorage;
+const J=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}};
+const P=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+let uid=null;try{uid=S.getItem("uid");if(!uid){uid=Math.random().toString(36).slice(2,10);S.setItem("uid",uid)}}catch(e){uid=Math.random().toString(36).slice(2,10)}
+let me=null,peers={},chats={},unread={},cur=null;
+const post=o=>bc.postMessage({...o,from:uid,name:me&&me.name});
+const nameOk=n=>/^[\w\u0600-\u06FF]{3,16}$/.test(n);
+const taken=n=>Object.values(peers).some(x=>x.toLowerCase()===n.toLowerCase());
+function blocked(id){const b=J("blk_"+uid,{});if(b[id]>Date.now())return b[id];if(b[id]){delete b[id];P("blk_"+uid,b)}return 0}
+function canChange(n){const p=J("prof_"+uid,null);if(p&&p.name!==n&&Date.now()-p.changed<7*D)return Math.ceil((p.changed+7*D-Date.now())/D);return 0}
+function el(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x)e.textContent=x;return e}
+
+$("#go").onclick=async()=>{
+  const n=$("#nm").value.trim(),e=$("#e1");
+  if(!nameOk(n))return e.textContent="الاسم من 3 إلى 16 حرفاً أو رقماً بدون مسافات.";
+  const w=canChange(n);if(w)return e.textContent="يمكنك تغيير اسمك بعد "+w+" يوم.";
+  peers={};bc.postMessage({t:"who",from:uid});
+  await new Promise(r=>setTimeout(r,350));
+  if(taken(n))return e.textContent="هذا الاسم مستخدم. اختر اسماً آخر.";
+  me={name:n};e.textContent="";
+  const p=J("prof_"+uid,null);if(!p||p.name!==n)P("prof_"+uid,{name:n,changed:Date.now()});
+  post({t:"hello"});$("#login").classList.add("hide");$("#app").classList.remove("hide");$("#mine").textContent=n;render();
+};
+$("#nm").onkeydown=e=>e.key==="Enter"&&$("#go").click();
+
+function exit(){
+  if(me)bc.postMessage({t:"bye",from:uid});
+  endCall(false);me=null;peers={};chats={};unread={};cur=null;
+  $("#app").classList.add("hide");$("#login").classList.remove("hide");$("#nm").value="";document.body.classList.remove("ch");
+}
+$("#out").onclick=exit;
+addEventListener("pagehide",()=>{if(me)bc.postMessage({t:"bye",from:uid})});
+
+$("#rn").onclick=()=>$("#ren").classList.toggle("hide");
+$("#sv").onclick=()=>{
+  const n=$("#nn").value.trim(),e=$("#e2");
+  if(n===me.name)return e.textContent="هذا اسمك الحالي.";
+  if(!nameOk(n))return e.textContent="الاسم من 3 إلى 16 حرفاً أو رقماً بدون مسافات.";
+  const w=canChange(n);if(w)return e.textContent="يمكنك تغيير اسمك بعد "+w+" يوم.";
+  if(taken(n))return e.textContent="هذا الاسم مستخدم.";
+  me.name=n;P("prof_"+uid,{name:n,changed:Date.now()});e.textContent="";$("#nn").value="";$("#ren").classList.add("hide");$("#mine").textContent=n;
+  Object.keys(peers).forEach(id=>{if(blocked(id))return;
+    bc.postMessage({t:(chats[id]&&chats[id].length)?"rename":"hello",from:uid,name:n,to:id,quiet:true})});
+};
+
+bc.onmessage=async ev=>{
+  const m=ev.data;if(m.from===uid||(m.to&&m.to!==uid))return;
+  if(m.t==="bye"){delete peers[m.from];delete chats[m.from];delete unread[m.from];if(cur===m.from){cur=null;document.body.classList.remove("ch")}if(callWith===m.from)endCall(false);return render()}
+  if(!me&&m.t!=="here"){if(m.t==="hello")peers[m.from]=m.name;return}
+  if(blocked(m.from))return;
+  if(m.t==="who"){bc.postMessage({t:"here",from:uid,name:me.name,to:m.from});return}
+  if(m.t==="hello"){peers[m.from]=m.name;if(!m.quiet)bc.postMessage({t:"here",from:uid,name:me.name,to:m.from});return render()}
+  if(m.t==="here"||m.t==="rename"){peers[m.from]=m.name;return render()}
+  if(m.t==="msg"){peers[m.from]=m.name;(chats[m.from]=chats[m.from]||[]).push({me:false,...m.p});if(cur!==m.from)unread[m.from]=(unread[m.from]||0)+1;return render()}
+  if(m.t==="offer"){
+    if(pc){return bc.postMessage({t:"end",from:uid,to:m.from})}
+    pend=m;callWith=m.from;showCall((m.name||"")+" يتصل بك"+(m.video?" (فيديو)":" (صوت)"),true);return}
+  if(m.t==="answer"&&pc){await pc.setRemoteDescription(m.sdp);flush();$("#cs").textContent="متصل";return}
+  if(m.t==="ice"&&pc){if(pc.remoteDescription)pc.addIceCandidate(m.c).catch(()=>{});else q.push(m.c);return}
+  if(m.t==="end"&&m.from===callWith)endCall(false);
+};
+
+function render(){
+  const f=$("#q").value.trim().toLowerCase(),L=$("#list");L.innerHTML="";
+  const ids=Object.keys(peers).filter(i=>peers[i].toLowerCase().includes(f));
+  if(!ids.length)L.append(el("p","empty","لا يوجد أحد متصل بهذا الاسم."));
+  ids.forEach(i=>{const r=el("div","row"+(i===cur?" on":""));r.append(el("i","",peers[i][0].toUpperCase()),el("span","",peers[i]));
+    if(unread[i])r.append(el("em","",unread[i]));r.onclick=()=>{cur=i;unread[i]=0;document.body.classList.add("ch");render()};L.append(r)});
+  renderChat();
+}
+function renderChat(){
+  if(cur&&!peers[cur])cur=null;
+  $("#none").classList.toggle("hide",!!cur);$("#chat").classList.toggle("hide",!cur);
+  if(!cur)return;
+  $("#cn").textContent=peers[cur];
+  const b=blocked(cur);$("#bl").textContent=b?"فك الحظر":"حظر";
+  $("#ban").classList.toggle("hide",!b);
+  if(b)$("#ban").textContent="محظور حتى "+new Date(b).toLocaleDateString("ar");
+  ["in","sd","im","mic","ca","cv"].forEach(k=>$("#"+k).disabled=!!b);
+  const box=$("#msgs");box.innerHTML="";
+  (chats[cur]||[]).forEach(m=>{const d=el("div","b "+(m.me?"me":"th"));
+    if(m.k==="text")d.textContent=m.d;
+    else if(m.k==="img"){const i=new Image();i.src=m.d;d.append(i)}
+    else{const a=document.createElement("audio");a.controls=true;a.src=m.d;d.append(a)}
+    box.append(d)});
+  box.scrollTop=box.scrollHeight;
+}
+$("#q").oninput=render;
+$("#back").onclick=()=>{cur=null;document.body.classList.remove("ch");render()};
+$("#bl").onclick=()=>{const k="blk_"+uid,b=J(k,{});if(blocked(cur))delete b[cur];else b[cur]=Date.now()+30*D;P(k,b);renderChat()};
+
+function send(p){if(!cur||blocked(cur))return;p.ts=Date.now();bc.postMessage({t:"msg",from:uid,name:me.name,to:cur,p});(chats[cur]=chats[cur]||[]).push({me:true,...p});renderChat()}
+$("#sd").onclick=()=>{const v=$("#in").value.trim();if(v){send({k:"text",d:v});$("#in").value=""}};
+$("#in").onkeydown=e=>e.key==="Enter"&&$("#sd").click();
+$("#im").onclick=()=>$("#fi").click();
+$("#fi").onchange=e=>{const f=e.target.files[0];e.target.value="";if(!f)return;
+  const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=()=>{const s=Math.min(1,700/Math.max(i.width,i.height)),c=document.createElement("canvas");
+    c.width=i.width*s;c.height=i.height*s;c.getContext("2d").drawImage(i,0,0,c.width,c.height);send({k:"img",d:c.toDataURL("image/jpeg",.75)})};i.src=r.result};r.readAsDataURL(f)};
+
+let rec=null,chunks=[];
+$("#mic").onclick=async()=>{
+  if(rec){rec.stop();return}
+  try{const st=await navigator.mediaDevices.getUserMedia({audio:true});rec=new MediaRecorder(st);chunks=[];
+    rec.ondataavailable=e=>chunks.push(e.data);
+    rec.onstop=()=>{st.getTracks().forEach(t=>t.stop());const r=new FileReader();r.onload=()=>send({k:"aud",d:r.result});r.readAsDataURL(new Blob(chunks,{type:rec.mimeType}));rec=null;$("#mic").textContent="🎤"};
+    rec.start();$("#mic").textContent="⏹️"}
+  catch(e){alert("تعذّر الوصول إلى الميكروفون. اسمح به من إعدادات المتصفح.")}
+};
+
+let pc=null,callWith=null,pend=null,stream=null,q=[];
+const sig=o=>bc.postMessage({...o,from:uid,name:me.name,to:callWith});
+function showCall(t,incoming){$("#call").classList.remove("hide");$("#cs").textContent=t;$("#ok").classList.toggle("hide",!incoming)}
+function flush(){q.forEach(c=>pc.addIceCandidate(c).catch(()=>{}));q=[]}
+async function setup(video){
+  stream=await navigator.mediaDevices.getUserMedia({audio:true,video});
+  $("#lv").srcObject=stream;pc=new RTCPeerConnection();
+  stream.getTracks().forEach(t=>pc.addTrack(t,stream));
+  pc.onicecandidate=e=>e.candidate&&sig({t:"ice",c:e.candidate});
+  pc.ontrack=e=>{$("#rv").srcObject=e.streams[0]};
+}
+async function start(video){
+  if(pc||!cur||blocked(cur))return;callWith=cur;
+  try{await setup(video);const o=await pc.createOffer();await pc.setLocalDescription(o);sig({t:"offer",sdp:o,video});showCall("جارٍ الاتصال…")}
+  catch(e){endCall(false);alert("تعذّر بدء المكالمة. تحقّق من أذونات الميكروفون والكاميرا.")}
+}
+$("#ca").onclick=()=>start(false);$("#cv").onclick=()=>start(true);
+$("#ok").onclick=async()=>{
+  try{await setup(pend.video);await pc.setRemoteDescription(pend.sdp);flush();const a=await pc.createAnswer();await pc.setLocalDescription(a);sig({t:"answer",sdp:a});$("#ok").classList.add("hide");$("#cs").textContent="متصل"}
+  catch(e){endCall(true)}
+};
+function endCall(notify){
+  if(notify&&callWith&&me)sig({t:"end"});
+  if(stream)stream.getTracks().forEach(t=>t.stop());
+  if(pc)pc.close();pc=null;stream=null;callWith=null;pend=null;q=[];
+  $("#rv").srcObject=null;$("#lv").srcObject=null;$("#call").classList.add("hide");
+}
+$("#no").onclick=()=>endCall(true);
+</script>
+</body>
+</html>
